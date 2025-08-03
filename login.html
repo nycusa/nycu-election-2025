@@ -19,7 +19,6 @@
     input[type="email"]:focus { outline: none; border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); }
     button { width: 100%; padding: 14px; background: linear-gradient(90deg, #1877f2, #3b5998); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
     button:disabled { background: #a0a0a0; cursor: not-allowed; }
-    button:hover:not(:disabled) { opacity: 0.9; }
     #statusMessage { text-align: center; margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-weight: 500; }
     .status-success { background-color: #e9f5e9; color: #4b844b; }
     .status-error { background-color: #f8d7da; color: #721c24; }
@@ -46,8 +45,23 @@
   </div>
 
   <script>
-    // ★★★★★★★★★★★★★★★★ 請將此處換成您部署 Apps Script 後得到的 API 網址 ★★★★★★★★★★★★★★★★
+    // 【已填入您的 API 網址】
     const API_URL = "https://script.google.com/macros/s/AKfycbyuE09M3uLAZB8A-Pel9pcc29CEC9xftF2a7TYJA0W_Aykv9eFLyahRObpsyVOU350y3w/exec";
+
+    // 這個函式將被後端 API 回傳的腳本呼叫
+    function handleApiResponse(response) {
+      const button = document.getElementById('submitButton');
+      const status = document.getElementById('statusMessage');
+      
+      status.textContent = response.message;
+      status.className = response.status === 'success' ? 'status-success' : 'status-error';
+      status.style.display = 'block';
+
+      if (response.status !== 'success') {
+        button.disabled = false;
+        button.textContent = '取得投票連結';
+      }
+    }
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -59,30 +73,11 @@
       button.textContent = '處理中...';
       status.style.display = 'none';
 
-      fetch(API_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'requestLink', email: email }),
-        redirect: 'follow'
-      })
-      .then(response => response.json())
-      .then(data => {
-        status.textContent = data.message;
-        status.className = data.status === 'success' ? 'status-success' : 'status-error';
-        status.style.display = 'block';
-        if (data.status !== 'success') {
-          button.disabled = false;
-          button.textContent = '取得投票連結';
-        }
-      })
-      .catch(error => {
-        status.textContent = '發生網路錯誤，請稍後再試。';
-        status.className = 'status-error';
-        status.style.display = 'block';
-        button.disabled = false;
-        button.textContent = '取得投票連結';
-      });
+      // 使用 JSONP 技術來發送跨網域請求
+      const script = document.createElement('script');
+      // 將請求參數附加到網址上，並指定回呼函式名稱為 handleApiResponse
+      script.src = `${API_URL}?action=requestLink&email=${encodeURIComponent(email)}&callback=handleApiResponse`;
+      document.body.appendChild(script);
     });
   </script>
 </body>
