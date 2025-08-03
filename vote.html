@@ -22,12 +22,67 @@
     .details-section ul { list-style-type: none; padding-left: 15px; margin: 0; }
     .details-section ul li { position: relative; padding-left: 20px; margin-bottom: 8px; color: #333; }
     .details-section ul li::before { content: '•'; position: absolute; left: 0; color: #007bff; font-weight: bold; }
-    .options-group label { display: block; background: #f7f7f7; padding: 18px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border: 2px solid #dddfe2; transition: all 0.2s ease-in-out; text-align: center; font-size: 18px; font-weight: 500; }
-    .options-group label:hover { border-color: #007bff; background-color: #f0f8ff; }
-    .options-group input[type="radio"] { display: none; }
-    .options-group input[type="radio"]:checked + span { font-weight: 700; }
-    button { width: 100%; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-top: 20px; }
-    button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+    
+    /* 【關鍵修正】投票選項樣式 */
+    .options-group .option-label {
+      display: block;
+      background: #f7f7f7;
+      padding: 18px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      border: 2px solid #dddfe2;
+      transition: all 0.2s ease-in-out;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      position: relative; /* 為了定位勾選圖示 */
+    }
+    .options-group .option-label:hover {
+      border-color: #007bff;
+      background-color: #f0f8ff;
+    }
+    .options-group input[type="radio"] {
+      display: none;
+    }
+    /* 【新增】被選中選項的樣式 */
+    .options-group .option-label.selected {
+      font-weight: 700;
+      border-color: #007bff;
+      background-color: #e7f3ff;
+      color: #0056b3;
+    }
+    /* 【新增】勾選圖示 */
+    .options-group .option-label.selected::after {
+      content: '✔';
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 22px;
+      color: #007bff;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s, opacity 0.2s;
+      margin-top: 20px;
+    }
+    /* 【新增】按鈕禁用時的樣式 */
+    button:disabled {
+      background-color: #a0a0a0;
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     #statusMessage { text-align: center; margin-top: 20px; padding: 15px; border-radius: 8px; display: none; font-weight: bold; font-size: 16px; }
     .status-success { background-color: #d4edda; color: #155724; }
     .status-error { background-color: #f8d7da; color: #721c24; }
@@ -40,6 +95,7 @@
         <h1>國立陽明交通大學學生會 會長選舉</h1>
         <p>同額競選，請對以下候選人行使同意權</p>
       </div>
+      <!-- 候選人資訊區 (維持不變) -->
       <div class="candidate-profile">
         <div class="candidate-photo">
           <img src="https://raw.githubusercontent.com/thc1006/thc1006.github.io/refs/heads/main/images/IMG_2140%20-%20%E8%94%A1%E6%94%BF%E6%9B%84.jpeg" alt="候選人 蔡政曄 照片">
@@ -76,16 +132,25 @@
           <li>關心兩校區宿舍系統合併事宜</li>
         </ul>
       </div>
+      
+      <!-- 投票表單區 -->
       <form id="voteForm">
         <input type="hidden" id="loginToken" name="token">
         <div class="form-group">
           <div class="options-group">
-            <label><input type="radio" name="vote" value="同意" required> <span>同意 Agree</span></label>
-            <label><input type="radio" name="vote" value="不同意"> <span>不同意 Disagree</span></label>
-            <label><input type="radio" name="vote" value="廢票/棄權"> <span>投廢票/棄權 Abstain</span></label>
+            <label class="option-label">
+              <input type="radio" name="vote" value="同意" required> <span>同意 Agree</span>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="vote" value="不同意"> <span>不同意 Disagree</span>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="vote" value="廢票/棄權"> <span>投廢票/棄權 Abstain</span>
+            </label>
           </div>
         </div>
-        <button type="submit" id="submitButton">確認送出您的選票</button>
+        <!-- 【關鍵修正】按鈕預設為禁用狀態 -->
+        <button type="submit" id="submitButton" disabled>確認送出您的選票</button>
       </form>
       <div id="statusMessage"></div>
     </div>
@@ -95,20 +160,34 @@
     // 【已填入您的 API 網址】
     const API_URL = "https://script.google.com/macros/s/AKfycbyuE09M3uLAZB8A-Pel9pcc29CEC9xftF2a7TYJA0W_Aykv9eFLyahRObpsyVOU350y3w/exec";
 
+    // 【關鍵修正】處理選項點擊與按鈕狀態的邏輯
+    const voteOptions = document.querySelectorAll('input[name="vote"]');
+    const optionLabels = document.querySelectorAll('.option-label');
+    const submitButton = document.getElementById('submitButton');
+
+    voteOptions.forEach((radio, index) => {
+      radio.addEventListener('change', () => {
+        // 啟用送出按鈕
+        submitButton.disabled = false;
+
+        // 更新所有選項的視覺樣式
+        optionLabels.forEach(label => label.classList.remove('selected'));
+        optionLabels[index].classList.add('selected');
+      });
+    });
+
+
     // 這個函式將被後端 API 回傳的腳本呼叫
     function handleVoteResponse(response) {
-        const button = document.getElementById('submitButton');
         const status = document.getElementById('statusMessage');
-
         status.textContent = response.message;
         status.className = response.status === 'success' ? 'status-success' : 'status-error';
         status.style.display = 'block';
-
         if (response.status === 'success') {
             document.getElementById('voteForm').style.display = 'none';
         } else {
-            button.disabled = false;
-            button.textContent = '確認送出您的選票';
+            submitButton.disabled = false;
+            submitButton.textContent = '確認送出您的選票';
         }
     }
 
@@ -124,11 +203,10 @@
 
     document.getElementById('voteForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const button = document.getElementById('submitButton');
       const status = document.getElementById('statusMessage');
       
-      button.disabled = true;
-      button.textContent = '投票處理中...';
+      submitButton.disabled = true;
+      submitButton.textContent = '投票處理中...';
       status.style.display = 'none';
 
       const token = document.getElementById('loginToken').value;
