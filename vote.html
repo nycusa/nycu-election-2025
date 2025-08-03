@@ -92,8 +92,25 @@
   </div>
 
   <script>
-    // ★★★★★★★★★★★★★★★★ 請將此處換成您部署 Apps Script 後得到的 API 網址 ★★★★★★★★★★★★★★★★
+    // 【已填入您的 API 網址】
     const API_URL = "https://script.google.com/macros/s/AKfycbyuE09M3uLAZB8A-Pel9pcc29CEC9xftF2a7TYJA0W_Aykv9eFLyahRObpsyVOU350y3w/exec";
+
+    // 這個函式將被後端 API 回傳的腳本呼叫
+    function handleVoteResponse(response) {
+        const button = document.getElementById('submitButton');
+        const status = document.getElementById('statusMessage');
+
+        status.textContent = response.message;
+        status.className = response.status === 'success' ? 'status-success' : 'status-error';
+        status.style.display = 'block';
+
+        if (response.status === 'success') {
+            document.getElementById('voteForm').style.display = 'none';
+        } else {
+            button.disabled = false;
+            button.textContent = '確認送出您的選票';
+        }
+    }
 
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -114,38 +131,13 @@
       button.textContent = '投票處理中...';
       status.style.display = 'none';
 
-      const formData = {
-        action: 'submitVote',
-        token: document.getElementById('loginToken').value,
-        vote: document.querySelector('input[name="vote"]:checked').value
-      };
+      const token = document.getElementById('loginToken').value;
+      const vote = document.querySelector('input[name="vote"]:checked').value;
 
-      fetch(API_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(formData),
-        redirect: 'follow'
-      })
-      .then(response => response.json())
-      .then(data => {
-        status.textContent = data.message;
-        status.className = data.status === 'success' ? 'status-success' : 'status-error';
-        status.style.display = 'block';
-        if (data.status === 'success') {
-          document.getElementById('voteForm').style.display = 'none';
-        } else {
-          button.disabled = false;
-          button.textContent = '確認送出您的選票';
-        }
-      })
-      .catch(error => {
-        status.textContent = '發生網路錯誤，請稍後再試。';
-        status.className = 'status-error';
-        status.style.display = 'block';
-        button.disabled = false;
-        button.textContent = '確認送出您的選票';
-      });
+      // 使用 JSONP 技術來發送跨網域請求
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=submitVote&token=${encodeURIComponent(token)}&vote=${encodeURIComponent(vote)}&callback=handleVoteResponse`;
+      document.body.appendChild(script);
     });
   </script>
 </body>
