@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>選舉系統登入 - 國立陽明交通大學學生會</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    html, body { height: 100%; margin: 0; }
+    body { font-family: 'Noto Sans TC', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #f0f2f5; }
+    .main-content { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; }
+    .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); width: 90%; max-width: 420px; text-align: center; box-sizing: border-box; }
+    .logo-container { margin-bottom: 25px; }
+    .logo-container img { max-width: 100px; height: auto; }
+    h1 { color: #1c1e21; font-size: 24px; margin-top: 0; margin-bottom: 10px; }
+    p { color: #606770; font-size: 16px; margin-bottom: 25px; }
+    input[type="email"] { width: 100%; padding: 14px 16px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #dddfe2; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s; }
+    input[type="email"]:focus { outline: none; border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); }
+    button { width: 100%; padding: 14px; background: linear-gradient(90deg, #1877f2, #3b5998); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+    button:disabled { background: #a0a0a0; cursor: not-allowed; }
+    button:hover:not(:disabled) { opacity: 0.9; }
+    #statusMessage { text-align: center; margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-weight: 500; }
+    .status-success { background-color: #e9f5e9; color: #4b844b; }
+    .status-error { background-color: #f8d7da; color: #721c24; }
+    .footer { width: 100%; text-align: center; padding: 20px 0; font-size: 12px; color: #8a8d91; }
+  </style>
+</head>
+<body>
+  <div class="main-content">
+    <div class="container">
+      <div class="logo-container">
+        <img src="https://raw.githubusercontent.com/thc1006/thc1006.github.io/refs/heads/main/images/%E9%99%BD%E6%98%8E%E4%BA%A4%E5%A4%A7%E5%AD%B8%E7%94%9F%E6%9C%83logo.png" alt="陽明交大學生會 Logo">
+      </div>
+      <h1>學生會長選舉 投票系統</h1>
+      <p>請輸入您的學校信箱，系統將會寄送專屬的投票連結給您。</p>
+      <form id="loginForm">
+        <input type="email" id="email" placeholder="例如：student@nycu.edu.tw" required>
+        <button type="submit" id="submitButton">取得投票連結</button>
+      </form>
+      <div id="statusMessage"></div>
+    </div>
+  </div>
+  <div class="footer">
+    開發者：秀吉的肝
+  </div>
+
+  <script>
+    // ★★★★★★★★★★★★★★★★ 請將此處換成您部署 Apps Script 後得到的 API 網址 ★★★★★★★★★★★★★★★★
+    const API_URL = "YOUR_APPS_SCRIPT_API_URL";
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const button = document.getElementById('submitButton');
+      const status = document.getElementById('statusMessage');
+
+      button.disabled = true;
+      button.textContent = '處理中...';
+      status.style.display = 'none';
+
+      fetch(API_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'requestLink', email: email }),
+        redirect: 'follow'
+      })
+      .then(response => response.json())
+      .then(data => {
+        status.textContent = data.message;
+        status.className = data.status === 'success' ? 'status-success' : 'status-error';
+        status.style.display = 'block';
+        if (data.status !== 'success') {
+          button.disabled = false;
+          button.textContent = '取得投票連結';
+        }
+      })
+      .catch(error => {
+        status.textContent = '發生網路錯誤，請稍後再試。';
+        status.className = 'status-error';
+        status.style.display = 'block';
+        button.disabled = false;
+        button.textContent = '取得投票連結';
+      });
+    });
+  </script>
+</body>
+</html>
