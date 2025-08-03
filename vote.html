@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>進行投票 - 國立陽明交通大學學生會</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: #f0f2f5; margin: 0; padding: 20px 0; }
+    .container { background: white; padding: 30px 40px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); width: 90%; max-width: 700px; box-sizing: border-box; }
+    .header { text-align: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 25px; }
+    .header h1 { color: #1c1e21; margin: 0; font-size: 24px; }
+    .header p { color: #606770; margin: 5px 0 0; font-size: 16px; }
+    .candidate-profile { display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 30px; }
+    .candidate-photo { flex: 0 0 150px; }
+    .candidate-photo img { width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; }
+    .candidate-info { flex: 1; min-width: 250px; }
+    .candidate-info h2 { margin: 0 0 10px; font-size: 28px; color: #000; }
+    .candidate-info p { margin: 4px 0; font-size: 16px; color: #444; }
+    .details-section h3 { border-left: 4px solid #007bff; padding-left: 10px; font-size: 18px; margin-top: 25px; margin-bottom: 15px; }
+    .details-section ul { list-style-type: none; padding-left: 15px; margin: 0; }
+    .details-section ul li { position: relative; padding-left: 20px; margin-bottom: 8px; color: #333; }
+    .details-section ul li::before { content: '•'; position: absolute; left: 0; color: #007bff; font-weight: bold; }
+    .options-group label { display: block; background: #f7f7f7; padding: 18px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border: 2px solid #dddfe2; transition: all 0.2s ease-in-out; text-align: center; font-size: 18px; font-weight: 500; }
+    .options-group label:hover { border-color: #007bff; background-color: #f0f8ff; }
+    .options-group input[type="radio"] { display: none; }
+    .options-group input[type="radio"]:checked + span { font-weight: 700; }
+    button { width: 100%; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-top: 20px; }
+    button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+    #statusMessage { text-align: center; margin-top: 20px; padding: 15px; border-radius: 8px; display: none; font-weight: bold; font-size: 16px; }
+    .status-success { background-color: #d4edda; color: #155724; }
+    .status-error { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="voteContainer">
+      <div class="header">
+        <h1>國立陽明交通大學學生會 會長選舉</h1>
+        <p>同額競選，請對以下候選人行使同意權</p>
+      </div>
+      <div class="candidate-profile">
+        <div class="candidate-photo">
+          <img src="https://raw.githubusercontent.com/thc1006/thc1006.github.io/refs/heads/main/images/IMG_2140%20-%20%E8%94%A1%E6%94%BF%E6%9B%84.jpeg" alt="候選人 蔡政曄 照片">
+        </div>
+        <div class="candidate-info">
+          <h2>蔡政曄</h2>
+          <p><strong>系所年級：</strong>管理科學系學士班四年級</p>
+          <p><strong>參選資格：</strong>學生代表</p>
+        </div>
+      </div>
+      <div class="details-section">
+        <h3>學經歷</h3>
+        <ul>
+          <li>臺北市立成功高中</li>
+          <li>國立陽明交通大學學生會交通分會活動部部長</li>
+          <li>國立陽明交通大學學生會交通分會會長</li>
+          <li>國立陽明交通大學學生議會不分區議員</li>
+          <li>國立陽明交通大學學生代表大會代表</li>
+          <li>國立陽明交通大學校務會議代表</li>
+          <li>國立陽明交通大學學務會議代表</li>
+          <li>國立陽明交通大學總務會議代表</li>
+          <li>國立陽明交通大學教務會議代表</li>
+          <li>乙巳梅竹賽諮議委員</li>
+          <li>交大校區宿舍管理委員</li>
+          <li>交大校區交通管理委員</li>
+        </ul>
+      </div>
+      <div class="details-section">
+        <h3>政見</h3>
+        <ul>
+          <li>協調兩分會共同事務</li>
+          <li>維持總會最低限度運作</li>
+          <li>上任後盡速將會費分發給兩分會</li>
+          <li>關心兩校區宿舍系統合併事宜</li>
+        </ul>
+      </div>
+      <form id="voteForm">
+        <input type="hidden" id="loginToken" name="token">
+        <div class="form-group">
+          <div class="options-group">
+            <label><input type="radio" name="vote" value="同意" required> <span>同意 Agree</span></label>
+            <label><input type="radio" name="vote" value="不同意"> <span>不同意 Disagree</span></label>
+            <label><input type="radio" name="vote" value="廢票/棄權"> <span>投廢票/棄權 Abstain</span></label>
+          </div>
+        </div>
+        <button type="submit" id="submitButton">確認送出您的選票</button>
+      </form>
+      <div id="statusMessage"></div>
+    </div>
+  </div>
+
+  <script>
+    // ★★★★★★★★★★★★★★★★ 請將此處換成您部署 Apps Script 後得到的 API 網址 ★★★★★★★★★★★★★★★★
+    const API_URL = "YOUR_APPS_SCRIPT_API_URL";
+
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        document.getElementById('loginToken').value = token;
+      } else {
+        document.getElementById('voteContainer').innerHTML = "<h1>無效的投票連結</h1><p style='text-align:center;'>請從您信箱中的專屬連結進入此頁面。</p>";
+      }
+    };
+
+    document.getElementById('voteForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const button = document.getElementById('submitButton');
+      const status = document.getElementById('statusMessage');
+      
+      button.disabled = true;
+      button.textContent = '投票處理中...';
+      status.style.display = 'none';
+
+      const formData = {
+        action: 'submitVote',
+        token: document.getElementById('loginToken').value,
+        vote: document.querySelector('input[name="vote"]:checked').value
+      };
+
+      fetch(API_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+        redirect: 'follow'
+      })
+      .then(response => response.json())
+      .then(data => {
+        status.textContent = data.message;
+        status.className = data.status === 'success' ? 'status-success' : 'status-error';
+        status.style.display = 'block';
+        if (data.status === 'success') {
+          document.getElementById('voteForm').style.display = 'none';
+        } else {
+          button.disabled = false;
+          button.textContent = '確認送出您的選票';
+        }
+      })
+      .catch(error => {
+        status.textContent = '發生網路錯誤，請稍後再試。';
+        status.className = 'status-error';
+        status.style.display = 'block';
+        button.disabled = false;
+        button.textContent = '確認送出您的選票';
+      });
+    });
+  </script>
+</body>
+</html>
