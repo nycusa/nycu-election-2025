@@ -1,8 +1,8 @@
 # 國立陽明交通大學學生會 選舉投票系統 (2025)
 
-這是一個專為國立陽明交通大學學生會選舉設計的線上匿名投票系統。系統完全基於 Google Workspace 生態系（Apps Script, Google Sheets）打造，旨在提供一個安全、可靠、具匿名性且可被稽核的投票解決方案。
+這是一個專為國立陽明交通大學學生會選舉設計的線上匿名投票系統。系統採用前後端分離的混合架構，前端由 GitHub Pages 提供服務，後端則由 Google Apps Script 驅動，旨在提供一個安全、可靠、具匿名性且可被稽核的投票解決方案。
 
-開發者：秀吉的肝
+開發者：[蔡秀吉](https://www.facebook.com/thc1006) @thc1006
 
 ---
 
@@ -17,61 +17,69 @@
 
 ## 🛠️ 系統架構
 
-本系統採用「純 Google Apps Script 網頁應用程式」架構，所有元件皆在 Google 生態系內運作，無需額外伺服器。
+本系統採用**前後端分離的混合架構 (Hybrid Architecture)**，以兼顧部署彈性、載入速度與後端安全性。
 
-* **前端 (Frontend):** 由 `login.html` 和 `vote.html` 組成，提供使用者互動介面。由 Apps Script 直接提供服務。
-* **後端 (Backend):** 由 `Code.gs` 檔案實現，作為系統的總控制中心。它是一個部署為「網頁應用程式」的 API，負責：
-    1. 提供前端 HTML 頁面。
-    2. 處理前端發來的請求（請求連結、提交選票）。
-    3. 驗證投票者資格與投票連結的有效性。
-    4. 與 Google Sheets 資料庫進行互動。
-    5. 透過 `MailApp` 服務寄送郵件。
-* **資料庫 (Database):** 由兩個獨立的 Google Sheets 構成：
-    1. **`[資料庫] 選民與驗證碼`**: 儲存所有具備投票資格的使用者名單、信箱、投票狀態及一次性的登入權杖。
-    2. **`[票箱] 匿名投票結果`**: 儲存經過哈希匿名化處理後的投票紀錄。
+* **前端 (Frontend) - GitHub Pages:**
+    * 使用者互動介面 (`login.html`, `vote.html`) 是作為一個靜態網站在 GitHub Pages 上託管。
+    * 優點是能提供一個專業、簡潔的官方網址（例如 `https://nycusa.github.io/nycu-election-2025/login.html`），並且擁有全球 CDN 加速，載入速度快。
+
+* **後端 (Backend) - Google Apps Script API:**
+    * `Code.gs` 檔案被部署為一個純粹的後端 API (Web App)，是整個系統的邏輯核心。
+    * 它不負責呈現任何網頁，僅專職處理來自前端的資料請求、驗證身份、與 Google Sheets 資料庫溝通、並寄送郵件。
+
+* **資料庫 (Database) - Google Sheets:**
+    * **`[資料庫] 選民與驗證碼`**: 儲存所有具備投票資格的使用者名單、信箱、投票狀態及一次性的登入權杖。
+    * **`[票箱] 匿名投票結果`**: 儲存經過哈希匿名化處理後的投票紀錄。
+
+* **通訊方式 (Communication):**
+    * 前端透過 **JSONP** (`GET` 請求搭配 callback 函式) 的方式，安全地對後端 Apps Script API 進行跨網域呼叫，以繞過瀏覽器的同源政策限制 (CORS)。
 
 ## 🚀 部署指南
 
-請嚴格依照以下步驟，即可從零開始部署一套完整的投票系統。
+部署流程分為「後端 API 部署」與「前端網站部署」兩大部分，請務必依序設定。
 
-### 1. 準備資料庫
+### 1. 後端 API 部署 (Google Apps Script)
 
-首先，我們需要建立兩個 Google Sheet 作為資料庫。
+#### 1.1 準備資料庫
+1.  **建立 `[資料庫] 選民與驗證碼` Sheet：**
+    * 建立一個新的 Google Sheet，並從網址列複製其 **Sheet ID**。
+    * 使用提供的 Colab 腳本處理您的原始選民名單，生成欄位順序正確的 CSV 檔案。
+    * 將生成的 CSV **所有內容（包含標題列）**，貼到這個 Sheet 的 `A1` 儲存格。
+    * 確認第一列標題為：`student_id`, `email`, `status`, `vote_timestamp`, `login_token`, `token_expiry`。
+2.  **建立 `[票箱] 匿名投票結果` Sheet：**
+    * 建立另一個新的、空白的 Google Sheet，並複製其 **Sheet ID**。
+    * 在第一列依序填入標題：`Hashed_ID`, `Candidate_Vote`, `Timestamp`。
 
-#### 1.1 建立 `[資料庫] 選民與驗證碼`
+#### 1.2 設定 Apps Script 專案
+1.  在 Google Drive 建立一個新的 Apps Script 專案。
+2.  將我們最終除錯完成的 **`Code.gs` 完整程式碼**貼上。
+3.  在 `Code.gs` 的「設定區」，填入您剛剛取得的兩個 **Sheet ID**。
+4.  點擊 💾 圖示**儲存專案**。
 
-1. 建立一個新的 Google Sheet。
-2. 從瀏覽器網址列複製其 **Sheet ID** (位於 `.../d/` 和 `/edit` 之間)。
-3. **清空此試算表**，確保其完全空白。
-4. 使用提供的 **Colab 腳本**處理您的原始選民名單 CSV 檔，它會生成一個欄位順序正確的 CSV 檔案。
-5. 將生成的 CSV 檔案的**所有內容（包含標題列）**，完整複製並貼到這個空白試算表的 `A1` 儲存格。
-6. 最終請確認第一列的欄位順序為：`student_id`, `email`, `status`, `vote_timestamp`, `login_token`, `token_expiry`。
+#### 1.3 部署 API
+1.  在 Apps Script 編輯器中，點擊右上角的藍色**「部署」**按鈕 -> **「新增部署作業」**。
+2.  類型選擇**「網頁應用程式」**。
+3.  設定：**執行身份**為 `我`；**誰可以存取**為 `任何人`。
+4.  點擊**「部署」**並完成授權。
+5.  完成後，您會得到一個以 `/exec` 結尾的網址。**請複製這串網址，這是您的後端 API 端點。**
 
-#### 1.2 建立 `[票箱] 匿名投票結果`
+### 2. 前端網站部署 (GitHub Pages)
 
-1. 建立另一個新的、空白的 Google Sheet。
-2. 從網址列複製其 **Sheet ID**。
-3. 在第一列，依序填入以下標題：`Hashed_ID`, `Candidate_Vote`, `Timestamp`。
+#### 2.1 設定 GitHub Repository
+1.  登入 GitHub，在 `nycusa` 組織下建立一個新的**公開 (Public)** Repository (例如 `nycu-election-2025`)。
+2.  將我們最終完成的 `login.html` 和 `vote.html` 兩個檔案上傳到這個 Repository。
 
-### 2. 設定 Google Apps Script 專案
+#### 2.2 連接前後端
+1.  在 GitHub 上，分別編輯 `login.html` 和 `vote.html` 檔案。
+2.  找到檔案中 `<script>` 區塊的這一行：
+    `const API_URL = "YOUR_APPS_SCRIPT_API_URL";`
+3.  將 **`YOUR_APPS_SCRIPT_API_URL`** 替換為您在 **步驟 1.3** 中複製的 Apps Script API 網址。
+4.  儲存這兩個檔案的變更。
 
-1. 在 Google Drive 中建立一個新的 Apps Script 專案。
-2. 在專案中，除了預設的 `Code.gs`，再建立 `login.html` 和 `vote.html` 兩個 HTML 檔案。
-3. 將最終確認可行的**三個檔案的完整程式碼**，分別複製並貼上到對應的檔案中。
-4. 打開 `Code.gs`，找到最上方的「設定區」，將您剛剛取得的兩個 **Sheet ID** 填入對應的變數中。
-5. 點擊 💾 圖示**儲存專案**。
-
-### 3. 部署網頁應用程式
-
-1. 在 Apps Script 編輯器中，點擊右上角的藍色**「部署」**按鈕。
-2. 選擇**「新增部署作業」**。
-3. 點擊「選取類型」旁的 ⚙ 圖示，選擇**「網頁應用程式」**。
-4. 進行以下設定：
-    * **執行身份：** `我`
-    * **誰可以存取：** `任何人`
-5. 點擊**「部署」**。
-6. 在跳出的視窗中，完成**授權存取**的流程（可能需要點擊「進階」並允許不安全的應用程式）。
-7. 完成後，您會得到一個以 `/exec` 結尾的網址。**這個網址就是您最終的官方投票系統入口。**
+#### 2.3 啟用網站
+1.  在您的 GitHub Repository 頁面，點擊 **"Settings"** -> **"Pages"**。
+2.  在 "Branch" 下，選擇 `main` 分支，並點擊 **"Save"**。
+3.  等待幾分鐘後，您的投票網站入口就會在 `https://nycusa.github.io/nycu-election-2025/login.html` 上線。
 
 ## 📊 選後計票
 
